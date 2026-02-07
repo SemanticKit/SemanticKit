@@ -78,8 +78,8 @@ private final class XMLTreeBuilder: NSObject, XMLParserDelegate {
     private var pendingNamespaceMappings: [String: String] = [:]
     private(set) var parseError: Error?
 
-    func parser(_ parser: XMLParser, didStartMappingPrefix prefix: String?, toURI namespaceURI: String) {
-        let key = prefix ?? ""
+    func parser(_ parser: XMLParser, didStartMappingPrefix prefix: String, toURI namespaceURI: String) {
+        let key = prefix.isEmpty ? "" : prefix
         pendingNamespaceMappings[key] = namespaceURI
     }
 
@@ -176,16 +176,17 @@ private struct RDFXMLParser {
         let data = Data(text.utf8)
         let root = try builder.buildRoot(from: data)
 
+        let rootContext = try elementContext(root, inherited: ElementContext(baseIRI: baseIRI, language: nil, direction: nil))
         if isRdfElement(root, localName: "RDF") {
             for child in root.children {
                 if case let .element(element) = child {
-                    _ = try parseNodeElement(element, inherited: makeContext(from: root, base: baseIRI))
+                    _ = try parseNodeElement(element, inherited: rootContext)
                 } else if case let .text(text) = child, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     throw RDFXMLError.invalidDocument("Unexpected text at document root.")
                 }
             }
         } else {
-            _ = try parseNodeElement(root, inherited: makeContext(from: root, base: baseIRI))
+            _ = try parseNodeElement(root, inherited: rootContext)
         }
         return graph
     }
@@ -194,16 +195,6 @@ private struct RDFXMLParser {
         let baseIRI: IRI?
         let language: String?
         let direction: TextDirection?
-    }
-
-    private func makeContext(from element: XMLElement, base: IRI?) throws -> ElementContext {
-        let baseValue = attributeValue(element, namespace: "http://www.w3.org/XML/1998/namespace", localName: "base")
-        let baseIRI = try resolveBase(baseValue, inherited: base)
-        let languageValue = attributeValue(element, namespace: "http://www.w3.org/XML/1998/namespace", localName: "lang")
-        let language = languageValue?.isEmpty == true ? nil : languageValue
-        let directionValue = attributeValue(element, namespace: itsNamespace, localName: "dir")
-        let direction = directionValue.flatMap { TextDirection(rawValue: $0.lowercased()) }
-        return ElementContext(baseIRI: baseIRI, language: language ?? base?.scheme.isEmpty == false ? nil : language, direction: direction)
     }
 
     private mutating func parseNodeElement(_ element: XMLElement, inherited: ElementContext) throws -> AnyRDFSubject {
@@ -217,12 +208,17 @@ private struct RDFXMLParser {
 
         for attr in element.attributes where isPropertyAttribute(attr) {
             let predicate = try attributeIRI(attr)
-            let literal = try makeLiteral(
-                value: attr.value,
-                language: context.language,
-                direction: context.direction
-            )
-            try insertTriple(subject: subject, predicate: predicate, object: AnyRDFObject(literal))
+            if predicate == RDF.Vocabulary.type {
+                let iri = try resolveIriReference(attr.value, base: context.baseIRI)
+                try insertTriple(subject: subject, predicate: predicate, object: AnyRDFObject(iri))
+            } else {
+                let literal = try makeLiteral(
+                    value: attr.value,
+                    language: context.language,
+                    direction: context.direction
+                )
+                try insertTriple(subject: subject, predicate: predicate, object: AnyRDFObject(literal))
+            }
         }
 
         var liCounter = 1
@@ -283,8 +279,7 @@ private struct RDFXMLParser {
                     let node = try parseNodeElement(child, inherited: context)
                     return try asObject(node)
                 }
-                let head = try buildCollection(objects, subject: subject, predicate: predicate, idAttr: idAttr, annotationAttr: annotationAttr, annotationNodeIDAttr: annotationNodeIDAttr, context: context)
-                _ = head
+                try buildCollection(objects, subject: subject, predicate: predicate, idAttr: idAttr, annotationAttr: annotationAttr, annotationNodeIDAttr: annotationNodeIDAttr, context: context)
                 return
             case "Triple":
                 let tripleTerm = try parseTripleTermContent(element, inherited: context)
@@ -490,7 +485,7 @@ private struct RDFXMLParser {
         return try BlankNode("genid\(blankNodeCounter)")
     }
 
-    private func parseSubject(from element: XMLElement, context: ElementContext) throws -> AnyRDFSubject {
+    private mutating func parseSubject(from element: XMLElement, context: ElementContext) throws -> AnyRDFSubject {
         let about = attributeValue(element, namespace: rdfNamespace, localName: "about")
         let nodeID = attributeValue(element, namespace: rdfNamespace, localName: "nodeID")
         let id = attributeValue(element, namespace: rdfNamespace, localName: "ID")
@@ -574,9 +569,11 @@ private struct RDFXMLParser {
 
     private func isPropertyAttribute(_ attribute: XMLAttribute) -> Bool {
         if attribute.prefix == "xmlns" || attribute.localName == "xmlns" { return false }
-        if attribute.namespaceURI == rdfNamespace { return false }
         if attribute.namespaceURI == "http://www.w3.org/XML/1998/namespace" { return false }
         if attribute.namespaceURI == itsNamespace { return false }
+        if attribute.namespaceURI == rdfNamespace {
+            return attribute.localName == "type"
+        }
         return true
     }
 

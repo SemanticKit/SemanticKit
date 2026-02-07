@@ -126,14 +126,18 @@ import Testing
     #expect(reifyMatches.count == 1)
 
     let termHolder = try IRI("http://example.org/termHolder")
+    let termHolderSubject = try AnyRDFSubject(termHolder)
     let termTriple = graph.triples.first { triple in
-        triple.subject == (try? AnyRDFSubject(termHolder)) && triple.predicate == prop
+        triple.subject == termHolderSubject && triple.predicate == prop
     }
     #expect(termTriple != nil)
     if let termTriple, let tripleTerm = termTriple.object.node as? TripleTerm {
-        #expect(tripleTerm.subject == (try? AnyRDFSubject(try IRI("http://example.org/s"))))
-        #expect(tripleTerm.predicate == (try? IRI("http://example.org/ns#p")))
-        #expect(tripleTerm.object == AnyRDFObject(try IRI("http://example.org/o")))
+        let s = try IRI("http://example.org/s")
+        let p = try IRI("http://example.org/ns#p")
+        let o = try IRI("http://example.org/o")
+        #expect(tripleTerm.subject == AnyRDFSubject(s))
+        #expect(tripleTerm.predicate == p)
+        #expect(tripleTerm.object == AnyRDFObject(o))
     } else {
         #expect(false, "Expected triple term object.")
     }
