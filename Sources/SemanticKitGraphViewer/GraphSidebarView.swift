@@ -2,42 +2,158 @@ import SwiftUI
 import SemanticKit
 
 struct GraphSidebarView: View {
-    let graph: Graph
+    let dataset: Dataset
+    @Binding var selectedGraphName: IRI?
 
-    @State private var selection: NodeSelection?
+    @State private var nodeSelection: NodeSelection?
+    @State private var searchText = ""
+    @State private var nodeScope: NodeScope = .all
+
+    private var activeGraph: Graph {
+        dataset.graph(selectedGraphName) ?? dataset.defaultGraph
+    }
 
     private var inspector: GraphInspector {
-        GraphInspector(graph: graph)
+        GraphInspector(graph: activeGraph)
     }
 
     var body: some View {
         NavigationSplitView {
-            List(selection: $selection) {
-                Section("Subjects") {
-                    ForEach(inspector.subjects) { entry in
-                        nodeRow(entry)
-                    }
+            graphList
+                .navigationTitle("Graphs")
+        } content: {
+            nodeList
+                .navigationTitle(activeGraphTitle)
+                .onChange(of: selectedGraphName) {
+                    nodeSelection = nil
                 }
-
-                Section("Predicates") {
-                    ForEach(inspector.predicates) { entry in
-                        nodeRow(entry)
-                    }
-                }
-
-                Section("Objects") {
-                    ForEach(inspector.objects) { entry in
-                        nodeRow(entry)
-                    }
-                }
-            }
-            .navigationTitle("Graph")
         } detail: {
-            if let selection {
-                NodeDetailView(details: inspector.details(for: selection))
+            if let nodeSelection {
+                NodeDetailView(details: inspector.details(for: nodeSelection))
             } else {
-                PlaceholderDetailView()
+                GraphOverviewView(
+                    dataset: dataset,
+                    graph: activeGraph,
+                    graphName: selectedGraphName
+                )
             }
+        }
+    }
+
+    private var activeGraphTitle: String {
+        selectedGraphName?.string ?? "Default Graph"
+    }
+
+    private var graphSelection: Binding<GraphSelection?> {
+        Binding(
+            get: {
+                if let selectedGraphName {
+                    return .named(selectedGraphName)
+                }
+                return .defaultGraph
+            },
+            set: { newValue in
+                switch newValue {
+                case .named(let name):
+                    selectedGraphName = name
+                default:
+                    selectedGraphName = nil
+                }
+                nodeSelection = nil
+            }
+        )
+    }
+
+    private var graphList: some View {
+        let datasetStats = DatasetStats(dataset: dataset)
+
+        return List(selection: graphSelection) {
+            Section("Graphs") {
+                graphRow(
+                    title: "Default Graph",
+                    subtitle: "Graph",
+                    count: dataset.defaultGraph.triples.count,
+                    symbolName: "square.grid.3x3",
+                    selection: .defaultGraph
+                )
+
+                ForEach(dataset.namedGraphs.keys.sorted(by: { $0.string < $1.string }), id: \.self) { name in
+                    let tripleCount = dataset.namedGraphs[name]?.triples.count ?? 0
+                    graphRow(
+                        title: name.string,
+                        subtitle: "Named Graph",
+                        count: tripleCount,
+                        symbolName: "cube.transparent",
+                        selection: .named(name)
+                    )
+                }
+            }
+
+            Section("Dataset") {
+                LabeledContent("Graphs", value: "\(datasetStats.graphCount)")
+                LabeledContent("Named Graphs", value: "\(datasetStats.namedGraphCount)")
+                LabeledContent("Triples", value: "\(datasetStats.tripleCount)")
+            }
+        }
+    }
+
+    private func graphRow(
+        title: String,
+        subtitle: String,
+        count: Int,
+        symbolName: String,
+        selection: GraphSelection
+    ) -> some View {
+        HStack(spacing: 8) {
+            Label(title, systemImage: symbolName)
+                .lineLimit(1)
+            Spacer()
+            Text("\(count)")
+                .foregroundStyle(.secondary)
+        }
+        .tag(selection)
+        .help(subtitle)
+    }
+
+    private var nodeList: some View {
+        List(selection: $nodeSelection) {
+            ForEach(nodeScope.kinds, id: \.self) { kind in
+                let entries = filteredEntries(for: kind)
+
+                Section("\(kind.title) (\(entries.count))") {
+                    ForEach(entries) { entry in
+                        nodeRow(entry)
+                    }
+                }
+            }
+        }
+        .searchable(text: $searchText, prompt: "Filter nodes")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Picker("Scope", selection: $nodeScope) {
+                    ForEach(NodeScope.allCases) { scope in
+                        Text(scope.title).tag(scope)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+        }
+    }
+
+    private func filteredEntries(for kind: NodeKind) -> [NodeEntry] {
+        let entries: [NodeEntry]
+        switch kind {
+        case .subject:
+            entries = inspector.subjects
+        case .predicate:
+            entries = inspector.predicates
+        case .object:
+            entries = inspector.objects
+        }
+
+        guard !searchText.isEmpty else { return entries }
+        return entries.filter { entry in
+            entry.label.localizedCaseInsensitiveContains(searchText)
         }
     }
 
@@ -48,13 +164,146 @@ struct GraphSidebarView: View {
     }
 }
 
-private struct PlaceholderDetailView: View {
+private enum GraphSelection: Hashable {
+    case defaultGraph
+    case named(IRI)
+}
+
+private enum NodeScope: String, CaseIterable, Identifiable {
+    case all
+    case subject
+    case predicate
+    case object
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all:
+            return "All"
+        case .subject:
+            return "Subjects"
+        case .predicate:
+            return "Predicates"
+        case .object:
+            return "Objects"
+        }
+    }
+
+    var kinds: [NodeKind] {
+        switch self {
+        case .all:
+            return NodeKind.allCases
+        case .subject:
+            return [.subject]
+        case .predicate:
+            return [.predicate]
+        case .object:
+            return [.object]
+        }
+    }
+}
+
+private struct DatasetStats {
+    let graphCount: Int
+    let namedGraphCount: Int
+    let tripleCount: Int
+
+    init(dataset: Dataset) {
+        graphCount = 1 + dataset.namedGraphs.count
+        namedGraphCount = dataset.namedGraphs.count
+        tripleCount = dataset.defaultGraph.triples.count + dataset.namedGraphs.values.reduce(0) { $0 + $1.triples.count }
+    }
+}
+
+private struct GraphStats {
+    let tripleCount: Int
+    let subjectCount: Int
+    let predicateCount: Int
+    let objectCount: Int
+
+    init(graph: Graph) {
+        let inspector = GraphInspector(graph: graph)
+        tripleCount = graph.triples.count
+        subjectCount = inspector.subjects.count
+        predicateCount = inspector.predicates.count
+        objectCount = inspector.objects.count
+    }
+}
+
+private struct GraphOverviewView: View {
+    let dataset: Dataset
+    let graph: Graph
+    let graphName: IRI?
+
     var body: some View {
-        ContentUnavailableView(
-            "Select a node",
-            systemImage: "point.3.connected.trianglepath.dotted",
-            description: Text("Pick a subject, predicate, or object to see details.")
-        )
+        let stats = GraphStats(graph: graph)
+        let datasetStats = DatasetStats(dataset: dataset)
+
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                header
+                summarySection(stats: stats)
+                datasetSection(stats: datasetStats)
+                if !dataset.namedGraphs.isEmpty {
+                    graphsSection
+                }
+            }
+            .padding(16)
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(graphName?.string ?? "Default Graph")
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            Text(graphName == nil ? "Default graph" : "Named graph")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func summarySection(stats: GraphStats) -> some View {
+        GroupBox("Graph Summary") {
+            VStack(alignment: .leading, spacing: 8) {
+                LabeledContent("Triples", value: "\(stats.tripleCount)")
+                LabeledContent("Subjects", value: "\(stats.subjectCount)")
+                LabeledContent("Predicates", value: "\(stats.predicateCount)")
+                LabeledContent("Objects", value: "\(stats.objectCount)")
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func datasetSection(stats: DatasetStats) -> some View {
+        GroupBox("Dataset Summary") {
+            VStack(alignment: .leading, spacing: 8) {
+                LabeledContent("Graphs", value: "\(stats.graphCount)")
+                LabeledContent("Named Graphs", value: "\(stats.namedGraphCount)")
+                LabeledContent("Triples", value: "\(stats.tripleCount)")
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var graphsSection: some View {
+        GroupBox("Named Graphs") {
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(dataset.namedGraphs.keys.sorted(by: { $0.string < $1.string }), id: \.self) { name in
+                    let count = dataset.namedGraphs[name]?.triples.count ?? 0
+                    HStack {
+                        Text(name.string)
+                            .lineLimit(1)
+                        Spacer()
+                        Text("\(count)")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 }
 
@@ -133,7 +382,7 @@ private struct NodeDetailView: View {
     }
 }
 
-private enum NodeKind: String {
+private enum NodeKind: String, CaseIterable {
     case subject
     case predicate
     case object
