@@ -15,20 +15,12 @@ let package = Package(
             targets: [
                 "SemanticKit"
             ]
-        ),
-        .library(name: "SemanticKitGraphViewer", targets: ["SemanticKitGraphViewer"]),
+        )
     ],
     targets: [
         .target(
             name: "SemanticKit",
             dependencies: []
-        ),
-        .target(
-            name: "SemanticKitGraphViewer",
-            dependencies: [
-                "SemanticKit"
-            ],
-            swiftSettings: []
         ),
         .testTarget(
             name: "SemanticKitTests",
