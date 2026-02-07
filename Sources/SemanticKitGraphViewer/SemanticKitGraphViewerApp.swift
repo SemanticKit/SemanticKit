@@ -3,8 +3,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 import SemanticKit
 
-@main
-struct SemanticKitGraphViewerApp: App {
+
+struct SemanticKitGraphViewer: View {
     @StateObject private var graphStore = GraphStore()
     @State private var isImporting = false
     @State private var isURLImporting = false
@@ -15,102 +15,79 @@ struct SemanticKitGraphViewerApp: App {
     @State private var exportDocument = RDFExportDocument(data: Data())
     @State private var errorMessage: String?
 
-    var body: some Scene {
-        WindowGroup {
-            GraphSidebarView(dataset: graphStore.dataset, selectedGraphName: $graphStore.selectedGraphName)
-                .toolbar {
-                    ToolbarItemGroup {
-                        Menu {
-                            Button("Import File...") {
-                                isImporting = true
-                            }
+    var body: some View {
+        GraphSidebarView(dataset: graphStore.dataset, selectedGraphName: $graphStore.selectedGraphName)
+          .toolbar {
+              ToolbarItemGroup {
+                  Menu {
+                      Button("Import File...") {
+                          isImporting = true
+                      }
 
-                            Button("Import from URL...") {
-                                isURLImporting = true
-                            }
-                        } label: {
-                            Label("Import", systemImage: "square.and.arrow.down")
-                        }
+                      Button("Import from URL...") {
+                          isURLImporting = true
+                      }
+                  } label: {
+                      Label("Import", systemImage: "square.and.arrow.down")
+                  }
 
-                        Menu {
-                            ForEach(RDFFormat.allCases) { format in
-                                Button("Export \(format.title)") {
-                                    export(format: format)
-                                }
-                            }
-                        } label: {
-                            Label("Export", systemImage: "square.and.arrow.up")
-                        }
+                  Menu {
+                      ForEach(RDFFormat.allCases) { format in
+                          Button("Export \(format.title)") {
+                              export(format: format)
+                          }
+                      }
+                  } label: {
+                      Label("Export", systemImage: "square.and.arrow.up")
+                  }
+              }
+          }
+          .fileImporter(
+            isPresented: $isImporting,
+            allowedContentTypes: RDFFormat.importContentTypes,
+            allowsMultipleSelection: false
+          ) { result in
+              switch result {
+              case .success(let urls):
+                  if let url = urls.first {
+                      importRdf(from: url)
+                  }
+              case .failure(let error):
+                  errorMessage = error.localizedDescription
+              }
+          }
+          .fileExporter(
+            isPresented: $isExporting,
+            document: exportDocument,
+            contentType: exportFormat.contentType,
+            defaultFilename: exportFormat.defaultFilename
+          ) { result in
+              if case .failure(let error) = result {
+                  errorMessage = error.localizedDescription
+              }
+          }
+          .sheet(isPresented: $isURLImporting) {
+              RemoteImportView(
+                urlText: $importURLText,
+                isFetching: isFetchingRemote,
+                onCancel: {
+                    isURLImporting = false
+                },
+                onImport: {
+                    Task {
+                        await importRemoteRdf(from: importURLText)
                     }
                 }
-                .fileImporter(
-                    isPresented: $isImporting,
-                    allowedContentTypes: RDFFormat.importContentTypes,
-                    allowsMultipleSelection: false
-                ) { result in
-                    switch result {
-                    case .success(let urls):
-                        if let url = urls.first {
-                            importRdf(from: url)
-                        }
-                    case .failure(let error):
-                        errorMessage = error.localizedDescription
-                    }
-                }
-                .fileExporter(
-                    isPresented: $isExporting,
-                    document: exportDocument,
-                    contentType: exportFormat.contentType,
-                    defaultFilename: exportFormat.defaultFilename
-                ) { result in
-                    if case .failure(let error) = result {
-                        errorMessage = error.localizedDescription
-                    }
-                }
-                .sheet(isPresented: $isURLImporting) {
-                    RemoteImportView(
-                        urlText: $importURLText,
-                        isFetching: isFetchingRemote,
-                        onCancel: {
-                            isURLImporting = false
-                        },
-                        onImport: {
-                            Task {
-                                await importRemoteRdf(from: importURLText)
-                            }
-                        }
-                    )
-                }
-                .alert("File Error", isPresented: Binding(
-                    get: { errorMessage != nil },
-                    set: { _ in errorMessage = nil }
-                )) {
-                    Button("OK", role: .cancel) {}
-                } message: {
-                    Text(errorMessage ?? "Unknown error.")
-                }
-        }
-        .commands {
-            CommandGroup(after: .newItem) {
-                Button("Import RDF...") {
-                    isImporting = true
-                }
-                .keyboardShortcut("o", modifiers: [.command, .shift])
-
-                Button("Import RDF from URL...") {
-                    isURLImporting = true
-                }
-                .keyboardShortcut("u", modifiers: [.command, .shift])
-
-                Menu("Export RDF") {
-                    ForEach(RDFFormat.allCases) { format in
-                        Button("Export \(format.title)...") {
-                            export(format: format)
-                        }
-                    }
-                }
-            }
-        }
+              )
+          }
+          .alert("File Error", isPresented: Binding(
+                                 get: { errorMessage != nil },
+                                 set: { _ in errorMessage = nil }
+                               )) {
+              Button("OK", role: .cancel) {}
+          } message: {
+              Text(errorMessage ?? "Unknown error.")
+          }        
     }
 
     private func export(format: RDFFormat) {
