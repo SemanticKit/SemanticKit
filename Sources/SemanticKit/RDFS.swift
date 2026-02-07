@@ -29,8 +29,10 @@ public extension RDF {
         public static let langString = makeIRI("\(namespace)langString")
         public static let dirLangString = makeIRI("\(namespace)dirLangString")
 
-        public static func containerMembershipProperty(_ index: Int) -> IRI {
-            precondition(index > 0, "Container membership property index must be positive")
+        public static func containerMembershipProperty(_ index: Int) throws -> IRI {
+            guard index > 0 else {
+                throw RDFTermError.invalidContainerMembershipIndex
+            }
             return makeIRI("\(namespace)_\(index)")
         }
 
@@ -149,8 +151,11 @@ public extension RDF {
             ]
 
             for (s, p, o) in classAxioms + propertyAxioms + schemaAxioms {
+                guard let subject = try? AnyRDFSubject(s) else {
+                    continue
+                }
                 let triple = Graph.TripleType(
-                    subject: AnyRDFSubject(s),
+                    subject: subject,
                     predicate: p,
                     object: AnyRDFObject(o)
                 )
@@ -171,7 +176,8 @@ public extension RDF {
 public extension Graph {
     func rdfsClosure(includeAxioms: Bool = true) -> Graph {
         var reasoner = RDFSReasoner(graph: self, includeAxioms: includeAxioms)
-        return reasoner.computeClosure()
+        let closure = reasoner.computeClosure()
+        return closure.merged(with: self)
     }
 
     func rdfsInferredTriples(includeAxioms: Bool = true) -> Set<Graph.TripleType> {
@@ -284,10 +290,13 @@ private struct RDFSReasoner {
             let subClassClosure = transitiveClosure(of: subClassOf)
 
             for (property, supers) in subPropertyClosure {
+                guard let propertySubject = try? AnyRDFSubject(property) else {
+                    continue
+                }
                 for superProperty in supers {
                     didChange = graph.addIfNeeded(
                         Graph.TripleType(
-                            subject: AnyRDFSubject(property),
+                            subject: propertySubject,
                             predicate: rdfs.subPropertyOf,
                             object: AnyRDFObject(superProperty)
                         )
@@ -312,21 +321,23 @@ private struct RDFSReasoner {
                 let predicate = triple.predicate
                 let object = triple.object
 
-                didChange = graph.addIfNeeded(
-                    Graph.TripleType(
-                        subject: AnyRDFSubject(predicate),
-                        predicate: rdf.type,
-                        object: AnyRDFObject(rdf.Property)
-                    )
-                ) || didChange
+                if let predicateSubject = try? AnyRDFSubject(predicate) {
+                    didChange = graph.addIfNeeded(
+                        Graph.TripleType(
+                            subject: predicateSubject,
+                            predicate: rdf.type,
+                            object: AnyRDFObject(rdf.Property)
+                        )
+                    ) || didChange
 
-                didChange = graph.addIfNeeded(
-                    Graph.TripleType(
-                        subject: AnyRDFSubject(predicate),
-                        predicate: rdf.type,
-                        object: AnyRDFObject(rdfs.Resource)
-                    )
-                ) || didChange
+                    didChange = graph.addIfNeeded(
+                        Graph.TripleType(
+                            subject: predicateSubject,
+                            predicate: rdf.type,
+                            object: AnyRDFObject(rdfs.Resource)
+                        )
+                    ) || didChange
+                }
 
                 didChange = graph.addIfNeeded(
                     Graph.TripleType(
@@ -400,13 +411,15 @@ private struct RDFSReasoner {
             }
 
             for property in propertyTypes {
-                didChange = graph.addIfNeeded(
-                    Graph.TripleType(
-                        subject: AnyRDFSubject(property),
-                        predicate: rdfs.subPropertyOf,
-                        object: AnyRDFObject(property)
-                    )
-                ) || didChange
+                if let subject = validatedSubject(property) {
+                    didChange = graph.addIfNeeded(
+                        Graph.TripleType(
+                            subject: subject,
+                            predicate: rdfs.subPropertyOf,
+                            object: AnyRDFObject(property)
+                        )
+                    ) || didChange
+                }
             }
 
             for clazz in classTypes {
@@ -430,13 +443,15 @@ private struct RDFSReasoner {
             }
 
             for property in containerMembershipProperties {
-                didChange = graph.addIfNeeded(
-                    Graph.TripleType(
-                        subject: AnyRDFSubject(property),
-                        predicate: rdfs.subPropertyOf,
-                        object: AnyRDFObject(rdfs.member)
-                    )
-                ) || didChange
+                if let subject = validatedSubject(property) {
+                    didChange = graph.addIfNeeded(
+                        Graph.TripleType(
+                            subject: subject,
+                            predicate: rdfs.subPropertyOf,
+                            object: AnyRDFObject(rdfs.member)
+                        )
+                    ) || didChange
+                }
             }
 
             for datatype in datatypeClasses {
@@ -450,23 +465,28 @@ private struct RDFSReasoner {
             }
 
             for (property, supers) in subPropertyClosure {
+                guard let propertySubject = validatedSubject(property) else {
+                    continue
+                }
                 if !supers.isEmpty {
                     didChange = graph.addIfNeeded(
                         Graph.TripleType(
-                            subject: AnyRDFSubject(property),
+                            subject: propertySubject,
                             predicate: rdf.type,
                             object: AnyRDFObject(rdf.Property)
                         )
                     ) || didChange
 
                     for superProperty in supers {
-                        didChange = graph.addIfNeeded(
-                            Graph.TripleType(
-                                subject: AnyRDFSubject(superProperty),
-                                predicate: rdf.type,
-                                object: AnyRDFObject(rdf.Property)
-                            )
-                        ) || didChange
+                        if let superSubject = validatedSubject(superProperty) {
+                            didChange = graph.addIfNeeded(
+                                Graph.TripleType(
+                                    subject: superSubject,
+                                    predicate: rdf.type,
+                                    object: AnyRDFObject(rdf.Property)
+                                )
+                            ) || didChange
+                        }
                     }
                 }
             }
@@ -518,23 +538,26 @@ private struct RDFSReasoner {
         }
 
         for property in membershipIRIs {
+            guard let subject = validatedSubject(property) else {
+                continue
+            }
             changed = graph.addIfNeeded(
                 Graph.TripleType(
-                    subject: AnyRDFSubject(property),
+                    subject: subject,
                     predicate: rdf.type,
                     object: AnyRDFObject(rdfs.ContainerMembershipProperty)
                 )
             ) || changed
             changed = graph.addIfNeeded(
                 Graph.TripleType(
-                    subject: AnyRDFSubject(property),
+                    subject: subject,
                     predicate: rdfs.domain,
                     object: AnyRDFObject(rdfs.Resource)
                 )
             ) || changed
             changed = graph.addIfNeeded(
                 Graph.TripleType(
-                    subject: AnyRDFSubject(property),
+                    subject: subject,
                     predicate: rdfs.range,
                     object: AnyRDFObject(rdfs.Resource)
                 )
@@ -565,7 +588,7 @@ private extension Graph {
 private extension AnyRDFObject {
     var resourceSubject: AnyRDFSubject? {
         if let resource = node as? any RDFSubject {
-            return AnyRDFSubject(resource)
+            return validatedSubject(resource)
         }
         return nil
     }
@@ -575,6 +598,10 @@ private extension AnyRDFSubject {
     var objectNode: any RDFObject {
         node as! any RDFObject
     }
+}
+
+private func validatedSubject(_ node: any RDFSubject) -> AnyRDFSubject? {
+    try? AnyRDFSubject(node)
 }
 
 private func transitiveClosure<T: Hashable>(of map: [T: Set<T>]) -> [T: Set<T>] {

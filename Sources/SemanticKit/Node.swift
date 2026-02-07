@@ -28,12 +28,21 @@ extension RDFBlankNode {
     }
 }
 
+// MARK: - RDF Literal Direction ---------------------------------------------
+
+/// Initial text direction for directional language-tagged strings.
+public enum TextDirection: String, Hashable {
+    case ltr
+    case rtl
+}
+
 // MARK: - RDFLiteral ---------------------------------------------------------
 
 /// A literal consists of a lexical form, an optional language tag, and an optional datatype IRI.
 public protocol RDFLiteral: RDFNode {
     var lexicalForm: String { get }
     var languageTag: String? { get }      // e.g. "en", "fr‑CA"
+    var textDirection: TextDirection? { get }
     var datatype: (any Iri)? { get }            // defaults to xsd:string when nil
 }
 
@@ -42,6 +51,9 @@ extension RDFLiteral {
         var lit = "\"\(lexicalForm)\""
         if let lang = languageTag {
             lit += "@\(lang)"
+            if let direction = textDirection {
+                lit += "--\(direction.rawValue)"
+            }
         }
         if let dt = datatype {
             lit += "^^<\(try! dt.asURL().absoluteString)>"
@@ -52,24 +64,14 @@ extension RDFLiteral {
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.lexicalForm == rhs.lexicalForm &&
         lhs.languageTag == rhs.languageTag &&
+        lhs.textDirection == rhs.textDirection &&
         lhs.datatype?.string == rhs.datatype?.string
     }
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(lexicalForm)
         hasher.combine(languageTag)
+        hasher.combine(textDirection)
         hasher.combine(datatype?.string)
     }
 }
-
-//public protocol RDFSubject: RDFNode {}
-//extension IRI: RDFSubject {}
-//extension BlankNode: RDFSubject {}
-//
-////public protocol RDFPredicate: RDFNode {}
-//extension IRI: RDFPredicate {}
-//
-////public protocol RDFObject: RDFNode {}
-//extension IRI: RDFObject {}
-//extension BlankNode: RDFObject {}
-//extension Literal: RDFObject {}

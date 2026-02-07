@@ -82,14 +82,18 @@ public struct Graph: RDFGraph, Hashable {
 
     // MARK: - Init
 
+    /// Creates an (empty) default graph.
+    public init() {
+        self.name = nil
+    }
+
     /// Creates an (empty) graph.
     /// - Parameter name: `nil` for the default graph; otherwise an IRI or a BlankNode.
-    public init(name: (any RDFNode)? = nil) {
+    public init(name: (any RDFNode)?) throws {
         if let n = name {
-            precondition(
-                n is IRI || n is BlankNode,
-                "Graph name must be IRI or BlankNode"
-            )
+            guard n is IRI || n is BlankNode else {
+                throw RDFTermError.invalidGraphName
+            }
         }
         self.name = name
     }
@@ -149,11 +153,10 @@ public struct AnyRDFSubject: RDFSubject {
     public let node: any RDFSubject
     private let boxed: AnyHashable
 
-    public init(_ node: any RDFSubject) {
-        precondition(
-            node is IRI || node is BlankNode,
-            "RDF subject must be IRI or BlankNode"
-        )
+    public init(_ node: any RDFSubject) throws {
+        guard node is IRI || node is BlankNode else {
+            throw RDFTermError.invalidSubject
+        }
         self.node = node
         self.boxed = AnyHashable(node)
     }

@@ -158,6 +158,7 @@ private enum NodeRef: Hashable {
     case iri(IRI)
     case blank(BlankNode)
     case literal(Literal)
+    case tripleTerm(TripleTerm)
 
     var label: String {
         switch self {
@@ -167,6 +168,8 @@ private enum NodeRef: Hashable {
             return blank.description
         case .literal(let literal):
             return literal.description
+        case .tripleTerm(let term):
+            return term.description
         }
     }
 }
@@ -295,6 +298,12 @@ private struct GraphInspector {
                 DetailRow(label: "Language Tag", value: literal.languageTag ?? "(none)"),
                 DetailRow(label: "Datatype", value: datatype)
             ]
+        case .tripleTerm(let term):
+            return [
+                DetailRow(label: "Subject", value: nodeRef(for: term.subject).label),
+                DetailRow(label: "Predicate", value: nodeRef(for: term.predicate).label),
+                DetailRow(label: "Object", value: nodeRef(for: term.object).label)
+            ]
         }
     }
 
@@ -309,7 +318,7 @@ private struct GraphInspector {
             return .blank(blank)
         }
 
-        return .blank(BlankNode("unknown"))
+        return .blank(try! BlankNode("unknown"))
     }
 
     private func nodeRef(for predicate: IRI) -> NodeRef {
@@ -331,6 +340,10 @@ private struct GraphInspector {
             return .literal(literal)
         }
 
-        return .literal(Literal("unknown"))
+        if let term = node as? TripleTerm {
+            return .tripleTerm(term)
+        }
+
+        return .literal(try! Literal("unknown"))
     }
 }

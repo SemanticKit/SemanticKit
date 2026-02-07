@@ -22,52 +22,52 @@ import Testing
 
     let triples: [Graph.TripleType] = [
         Graph.TripleType(
-            subject: AnyRDFSubject(parent),
+            subject: try AnyRDFSubject(parent),
             predicate: RDF.RDFS.subPropertyOf,
             object: AnyRDFObject(ancestor)
         ),
         Graph.TripleType(
-            subject: AnyRDFSubject(child),
+            subject: try AnyRDFSubject(child),
             predicate: parent,
             object: AnyRDFObject(org1)
         ),
         Graph.TripleType(
-            subject: AnyRDFSubject(person),
+            subject: try AnyRDFSubject(person),
             predicate: RDF.RDFS.subClassOf,
             object: AnyRDFObject(agent)
         ),
         Graph.TripleType(
-            subject: AnyRDFSubject(child),
+            subject: try AnyRDFSubject(child),
             predicate: RDF.Vocabulary.type,
             object: AnyRDFObject(person)
         ),
         Graph.TripleType(
-            subject: AnyRDFSubject(worksFor),
+            subject: try AnyRDFSubject(worksFor),
             predicate: RDF.RDFS.domain,
             object: AnyRDFObject(person)
         ),
         Graph.TripleType(
-            subject: AnyRDFSubject(worksFor),
+            subject: try AnyRDFSubject(worksFor),
             predicate: RDF.RDFS.range,
             object: AnyRDFObject(organization)
         ),
         Graph.TripleType(
-            subject: AnyRDFSubject(child),
+            subject: try AnyRDFSubject(child),
             predicate: worksFor,
             object: AnyRDFObject(org1)
         ),
         Graph.TripleType(
-            subject: AnyRDFSubject(containerMember),
+            subject: try AnyRDFSubject(containerMember),
             predicate: RDF.Vocabulary.type,
             object: AnyRDFObject(RDF.RDFS.ContainerMembershipProperty)
         ),
         Graph.TripleType(
-            subject: AnyRDFSubject(child),
+            subject: try AnyRDFSubject(child),
             predicate: containerMember,
             object: AnyRDFObject(item1)
         ),
         Graph.TripleType(
-            subject: AnyRDFSubject(customDatatype),
+            subject: try AnyRDFSubject(customDatatype),
             predicate: RDF.Vocabulary.type,
             object: AnyRDFObject(RDF.RDFS.Datatype)
         )
@@ -81,7 +81,7 @@ import Testing
 
     #expect(closure.contains(
         Graph.TripleType(
-            subject: AnyRDFSubject(child),
+            subject: try AnyRDFSubject(child),
             predicate: RDF.Vocabulary.type,
             object: AnyRDFObject(agent)
         )
@@ -89,7 +89,7 @@ import Testing
 
     #expect(closure.contains(
         Graph.TripleType(
-            subject: AnyRDFSubject(org1),
+            subject: try AnyRDFSubject(org1),
             predicate: RDF.Vocabulary.type,
             object: AnyRDFObject(organization)
         )
@@ -97,7 +97,7 @@ import Testing
 
     #expect(closure.contains(
         Graph.TripleType(
-            subject: AnyRDFSubject(child),
+            subject: try AnyRDFSubject(parent),
             predicate: RDF.RDFS.subPropertyOf,
             object: AnyRDFObject(ancestor)
         )
@@ -105,7 +105,7 @@ import Testing
 
     #expect(closure.contains(
         Graph.TripleType(
-            subject: AnyRDFSubject(child),
+            subject: try AnyRDFSubject(child),
             predicate: ancestor,
             object: AnyRDFObject(org1)
         )
@@ -113,7 +113,7 @@ import Testing
 
     #expect(closure.contains(
         Graph.TripleType(
-            subject: AnyRDFSubject(child),
+            subject: try AnyRDFSubject(child),
             predicate: RDF.Vocabulary.type,
             object: AnyRDFObject(RDF.RDFS.Resource)
         )
@@ -121,7 +121,7 @@ import Testing
 
     #expect(closure.contains(
         Graph.TripleType(
-            subject: AnyRDFSubject(org1),
+            subject: try AnyRDFSubject(org1),
             predicate: RDF.Vocabulary.type,
             object: AnyRDFObject(RDF.RDFS.Resource)
         )
@@ -129,7 +129,7 @@ import Testing
 
     #expect(closure.contains(
         Graph.TripleType(
-            subject: AnyRDFSubject(containerMember),
+            subject: try AnyRDFSubject(containerMember),
             predicate: RDF.RDFS.subPropertyOf,
             object: AnyRDFObject(RDF.RDFS.member)
         )
@@ -137,7 +137,7 @@ import Testing
 
     #expect(closure.contains(
         Graph.TripleType(
-            subject: AnyRDFSubject(child),
+            subject: try AnyRDFSubject(child),
             predicate: RDF.RDFS.member,
             object: AnyRDFObject(item1)
         )
@@ -145,7 +145,7 @@ import Testing
 
     #expect(closure.contains(
         Graph.TripleType(
-            subject: AnyRDFSubject(customDatatype),
+            subject: try AnyRDFSubject(customDatatype),
             predicate: RDF.RDFS.subClassOf,
             object: AnyRDFObject(RDF.RDFS.Literal)
         )

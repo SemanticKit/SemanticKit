@@ -174,7 +174,7 @@ private extension Dataset {
 
 private extension Graph {
     func remappingBlankNodes(using mapping: inout [String: BlankNode], prefix: String) -> Graph {
-        var newGraph = Graph(name: name)
+        var newGraph = (try? Graph(name: name)) ?? Graph()
 
         for triple in triples {
             let newSubject = remapSubject(triple.subject, mapping: &mapping, prefix: prefix)
@@ -207,7 +207,9 @@ private func remapSubject(
     prefix: String
 ) -> AnyRDFSubject {
     if let blank = subject.node as? BlankNode {
-        return AnyRDFSubject(remapBlank(blank, mapping: &mapping, prefix: prefix))
+        if let remapped = try? AnyRDFSubject(remapBlank(blank, mapping: &mapping, prefix: prefix)) {
+            return remapped
+        }
     }
     return subject
 }
@@ -231,7 +233,9 @@ private func remapBlank(
     if let existing = mapping[blank.identifier] {
         return existing
     }
-    let remapped = BlankNode("\(prefix)\(blank.identifier)")
+    guard let remapped = try? BlankNode("\(prefix)\(blank.identifier)") else {
+        return blank
+    }
     mapping[blank.identifier] = remapped
     return remapped
 }

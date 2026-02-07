@@ -7,7 +7,7 @@ import Foundation
 ///
 /// - The **subject** must be an IRI or a BlankNode.
 /// - The **predicate** must always be an IRI.
-/// - The **object** may be an IRI, BlankNode, or Literal.
+/// - The **object** may be an IRI, BlankNode, Literal, or TripleTerm.
 public protocol RDFTriple: Hashable, CustomStringConvertible {
     associatedtype Subject: RDFNode where Subject: RDFSubject
     associatedtype Predicate: RDFNode where Predicate: RDFPredicate
@@ -57,16 +57,29 @@ public struct Triple<S: RDFSubject, O: RDFObject>: RDFTriple {
     public let object: O
 
     public init(subject: S, predicate: IRI, object: O) {
-        // Subject-type rule (subject may not be a Literal)
-        let subjectNode: any RDFNode = (subject as? AnyRDFSubject)?.node ?? subject
-        let isValidSubject = subjectNode is IRI || subjectNode is BlankNode
-        // precondition(isValidSubject, "RDF subject must be IRI or BlankNode")
-
-        // Predicate-type rule (must be IRI)
-        let isAbsolutePredicate = NSString(string: predicate.string).isAbsolutePath
-        // precondition(isAbsolutePredicate, "RDF predicate must be an absolute IRI")
+        // Subject-type rule (subject may not be a Literal).
+        // Predicate-type rule (must be IRI).
         self.subject = subject
         self.predicate = predicate
         self.object = object
+    }
+}
+
+// MARK: - Triple Term --------------------------------------------------------
+
+/// A triple term is an RDF term that can be used as the object of another triple.
+public struct TripleTerm: RDFObject, Hashable, CustomStringConvertible {
+    public let subject: AnyRDFSubject
+    public let predicate: IRI
+    public let object: AnyRDFObject
+
+    public init(subject: AnyRDFSubject, predicate: IRI, object: AnyRDFObject) {
+        self.subject = subject
+        self.predicate = predicate
+        self.object = object
+    }
+
+    public var description: String {
+        "<<\(subject) \(predicate) \(object)>>"
     }
 }
