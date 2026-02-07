@@ -97,7 +97,7 @@ public struct Literal: RDFLiteral {
             }
         }
         if let dt = datatype {
-            guard NSString(string: dt.string).isAbsolutePath else {
+            guard !dt.scheme.isEmpty else {
                 throw RDFTermError.datatypeIriNotAbsolute
             }
         }
