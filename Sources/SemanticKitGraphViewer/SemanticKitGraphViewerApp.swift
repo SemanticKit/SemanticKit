@@ -212,13 +212,13 @@ struct SemanticKitGraphViewer: View {
     }
 }
 
-private enum RDFFormat: String, CaseIterable, Identifiable {
+public enum RDFFormat: String, CaseIterable, Identifiable {
     case turtle
     case ntriples
     case nquads
     case rdfxml
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
     var title: String {
         switch self {
@@ -313,16 +313,16 @@ private enum RDFFormat: String, CaseIterable, Identifiable {
     }
 }
 
-private enum RDFImportResult {
+public enum RDFImportResult {
     case graph(Graph)
     case dataset(Dataset)
 }
 
-private enum ImportError: LocalizedError {
+public enum ImportError: LocalizedError {
     case invalidText
     case unsupportedFormat
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .invalidText:
             return "Unable to read content as UTF-8 text."
@@ -332,7 +332,7 @@ private enum ImportError: LocalizedError {
     }
 }
 
-private final class GraphStore: ObservableObject {
+public final class GraphStore: ObservableObject {
     @Published var dataset: Dataset = SampleGraphBuilder.makeDataset()
     @Published var selectedGraphName: IRI?
 
@@ -397,8 +397,8 @@ private enum SampleGraphBuilder {
     }
 }
 
-private struct RDFExportDocument: FileDocument {
-    static var readableContentTypes: [UTType] { RDFFormat.importContentTypes }
+public struct RDFExportDocument: FileDocument {
+    public static var readableContentTypes: [UTType] { RDFFormat.importContentTypes }
 
     let data: Data
 
@@ -406,22 +406,22 @@ private struct RDFExportDocument: FileDocument {
         self.data = data
     }
 
-    init(configuration: ReadConfiguration) throws {
+    public init(configuration: ReadConfiguration) throws {
         data = configuration.file.regularFileContents ?? Data()
     }
 
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+    public func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
         FileWrapper(regularFileWithContents: data)
     }
 }
 
-private struct RemoteImportView: View {
+public struct RemoteImportView: View {
     @Binding var urlText: String
     let isFetching: Bool
     let onCancel: () -> Void
     let onImport: () -> Void
 
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Import from IRI, URI, or URL")
                 .font(.title2)
@@ -459,7 +459,7 @@ private struct RemoteImportView: View {
     }
 }
 
-private extension UTType {
+public extension UTType {
     static let turtle = UTType(filenameExtension: "ttl") ?? .plainText
     static let ntriples = UTType(filenameExtension: "nt") ?? .plainText
     static let nquads = UTType(filenameExtension: "nq") ?? .plainText
