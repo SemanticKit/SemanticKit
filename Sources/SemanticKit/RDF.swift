@@ -50,7 +50,7 @@ public struct Literal: RDFLiteral {
             precondition(!lang.isEmpty, "Language tag must not be empty")
         }
         if let dt = datatype {
-            precondition(NSString(string: dt.string).isAbsolutePath, "Datatype IRI must be absolute")
+            //precondition(NSString(string: dt.string).isAbsolutePath, "Datatype IRI must be absolute")
         }
     }
 }

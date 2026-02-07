@@ -5,6 +5,10 @@ import PackageDescription
 
 let package = Package(
     name: "SemanticKit",
+    platforms: [
+        .macOS(.v14),
+        .iOS(.v17)
+    ],
     products: [
         .library(
             name: "SemanticKit",
@@ -12,11 +16,25 @@ let package = Package(
                 "SemanticKit"
             ]
         ),
+        .executable(
+            name: "SemanticKitGraphViewer",
+            targets: [
+                "SemanticKitGraphViewer"
+            ]
+        )
     ],
     targets: [
         .target(
             name: "SemanticKit",
             dependencies: [
+            ]
+        ),
+        .executableTarget(
+            name: "SemanticKitGraphViewer",
+            dependencies: [
+                "SemanticKit"
+            ],
+            swiftSettings: [
             ]
         ),
         .testTarget(
