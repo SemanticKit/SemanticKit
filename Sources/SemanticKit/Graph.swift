@@ -74,7 +74,7 @@ extension RDFGraph {
 // -------------------------------------------------------------------------
 
 /// The concrete, mutable implementation used by the library.
-public struct Graph: RDFGraph, Hashable {
+public struct Graph: RDFGraph, Hashable, Sendable {
     public typealias TripleType = Triple<AnyRDFSubject, AnyRDFObject>
 
     public let name: (any RDFNode)? // nil → default graph
@@ -149,46 +149,42 @@ extension BlankNode: RDFObject {}
 extension Literal: RDFObject {}
 
 /// Type-erased subject wrapper so graphs can store heterogeneous subjects.
-public struct AnyRDFSubject: RDFSubject {
+public struct AnyRDFSubject: RDFSubject, Sendable {
     public let node: any RDFSubject
-    private let boxed: AnyHashable
 
     public init(_ node: any RDFSubject) throws {
         guard node is IRI || node is BlankNode else {
             throw RDFTermError.invalidSubject
         }
         self.node = node
-        self.boxed = AnyHashable(node)
     }
 
     public var description: String { node.description }
 
     public static func == (lhs: AnyRDFSubject, rhs: AnyRDFSubject) -> Bool {
-        lhs.boxed == rhs.boxed
+        AnyHashable(lhs.node) == AnyHashable(rhs.node)
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(boxed)
+        hasher.combine(AnyHashable(node))
     }
 }
 
 /// Type-erased object wrapper so graphs can store heterogeneous objects.
-public struct AnyRDFObject: RDFObject {
+public struct AnyRDFObject: RDFObject, Sendable {
     public let node: any RDFObject
-    private let boxed: AnyHashable
 
     public init(_ node: any RDFObject) {
         self.node = node
-        self.boxed = AnyHashable(node)
     }
 
     public var description: String { node.description }
 
     public static func == (lhs: AnyRDFObject, rhs: AnyRDFObject) -> Bool {
-        lhs.boxed == rhs.boxed
+        AnyHashable(lhs.node) == AnyHashable(rhs.node)
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(boxed)
+        hasher.combine(AnyHashable(node))
     }
 }

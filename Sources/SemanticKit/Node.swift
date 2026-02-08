@@ -4,7 +4,7 @@ import Foundation
 // MARK: - RDFNode -----------------------------------------------------------
 
 /// The most generic protocol for every RDF term.
-public protocol RDFNode: Hashable, CustomStringConvertible {}
+public protocol RDFNode: Hashable, CustomStringConvertible, Sendable {}
 
 extension RDFNode {
     /// A handy shortcut for converting the node to an N‑Triples literal.
@@ -31,7 +31,7 @@ extension RDFBlankNode {
 // MARK: - RDF Literal Direction ---------------------------------------------
 
 /// Initial text direction for directional language-tagged strings.
-public enum TextDirection: String, Hashable {
+public enum TextDirection: String, Hashable, Sendable {
     case ltr
     case rtl
 }

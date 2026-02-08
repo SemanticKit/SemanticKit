@@ -47,7 +47,7 @@ extension RDFTriple {
 
 /// The default concrete triple used by the library.  It is a *value type*,
 /// therefore it can be stored efficiently in Sets.
-public struct Triple<S: RDFSubject, O: RDFObject>: RDFTriple {
+public struct Triple<S: RDFSubject, O: RDFObject>: RDFTriple, Sendable where S: Sendable, O: Sendable {
     public typealias Subject = S
     public typealias Predicate = IRI
     public typealias Object = O
@@ -68,7 +68,7 @@ public struct Triple<S: RDFSubject, O: RDFObject>: RDFTriple {
 // MARK: - Triple Term --------------------------------------------------------
 
 /// A triple term is an RDF term that can be used as the object of another triple.
-public struct TripleTerm: RDFObject, Hashable, CustomStringConvertible {
+public struct TripleTerm: RDFObject, Hashable, CustomStringConvertible, Sendable {
     public let subject: AnyRDFSubject
     public let predicate: IRI
     public let object: AnyRDFObject
