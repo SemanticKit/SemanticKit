@@ -78,6 +78,7 @@ public struct ConcreteIri: Iri, Hashable, Sendable {
     public let path: String
     public let query: String?
     public let fragment: String?
+    private let hasFragmentSeparator: Bool
     
     // MARK: Init
     
@@ -111,6 +112,7 @@ public struct ConcreteIri: Iri, Hashable, Sendable {
         var extractedPath = ""
         var extractedQuery: String? = nil
         var extractedFragment: String? = nil
+        var extractedHasFragmentSeparator = false
         
         // Authority is introduced by "//". If present, consume it.
         if remainder.hasPrefix("//") {
@@ -123,6 +125,7 @@ public struct ConcreteIri: Iri, Hashable, Sendable {
         
         // Extract fragment (after "#")
         if let hashIndex = remainder.firstIndex(of: "#") {
+            extractedHasFragmentSeparator = true
             extractedFragment = String(remainder[remainder.index(after: hashIndex)...])
             remainder = String(remainder[..<hashIndex])
         }
@@ -135,6 +138,16 @@ public struct ConcreteIri: Iri, Hashable, Sendable {
         
         // Whatever remains is the path.
         extractedPath = remainder
+
+        // If there is no explicit fragment separator, use the last path segment.
+        if extractedFragment == nil {
+            if let lastSlashIndex = extractedPath.lastIndex(of: "/") {
+                let startIndex = extractedPath.index(after: lastSlashIndex)
+                if startIndex < extractedPath.endIndex {
+                    extractedFragment = String(extractedPath[startIndex...])
+                }
+            }
+        }
         
         // Validate each component according to RFC 3987 character sets.
         // The validation functions accept Unicode and perform percent‑encoding where required.
@@ -143,6 +156,7 @@ public struct ConcreteIri: Iri, Hashable, Sendable {
         self.path = try IriComponentValidator.percentEncodePath(extractedPath)
         self.query = try extractedQuery.map { try IriComponentValidator.percentEncodeQueryOrFragment($0) }
         self.fragment = try extractedFragment.map { try IriComponentValidator.percentEncodeQueryOrFragment($0) }
+        self.hasFragmentSeparator = extractedHasFragmentSeparator
     }
     
     // MARK: Iri Conformance
@@ -157,7 +171,7 @@ public struct ConcreteIri: Iri, Hashable, Sendable {
         if let q = query {
             result += "?\(q)"
         }
-        if let f = fragment {
+        if hasFragmentSeparator, let f = fragment {
             result += "#\(f)"
         }
         return result
