@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.3
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 import PackageDescription
 import CompilerPluginSupport
@@ -25,7 +25,6 @@ let package = Package(
         .target(
             name: "SemanticKit",
             dependencies: ["SemanticKitMacros"],
-            path: "SemanticKit"
         ),
         .macro(
             name: "SemanticKitMacros",
@@ -39,7 +38,6 @@ let package = Package(
         .testTarget(
             name: "SemanticKitTests",
             dependencies: ["SemanticKit"],
-            path: "SemanticKitTests"
         ),
     ]
 )
