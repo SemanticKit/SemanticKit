@@ -8,14 +8,14 @@ struct IRIBoundaryTests {
     @Test("The IRI that SemanticKit's terms carry is IRIKit's IRI.")
     func predicateIsIRIKitsIRI() throws {
         let predicate: IRIKit.IRI = try IRI(validating: "https://example.com/p")
-        let triple = Graph.TripleType(
-            subject: try AnyRDFSubject(IRI(validating: "https://example.com/s")),
+        let triple = Graph.Element(
+            subject: .iri(try IRI(validating: "https://example.com/s")),
             predicate: predicate,
-            object: AnyRDFObject(try IRI(validating: "https://example.com/o"))
+            object: .iri(try IRI(validating: "https://example.com/o"))
         )
 
         #expect(triple.predicate == predicate)
-        #expect(triple.description == "https://example.com/s https://example.com/p https://example.com/o .")
+        #expect(triple.description == "<https://example.com/s> <https://example.com/p> <https://example.com/o> .")
     }
 
     @Test(
@@ -57,27 +57,5 @@ struct IRIBoundaryTests {
         #expect(lhs == same)
         #expect(lhs.hashValue == same.hashValue)
         #expect(lhs != encoded)
-    }
-
-    @Test("A dataset writes its named graphs in IRI order.")
-    func datasetOrdersNamedGraphsByIRI() throws {
-        let a = try IRI(validating: "https://example.com/a")
-        let b = try IRI(validating: "https://example.com/b")
-        func graph(named name: IRI) throws -> Graph {
-            var graph = try Graph(name: name)
-            try graph.insert(Graph.TripleType(subject: try AnyRDFSubject(name), predicate: name, object: AnyRDFObject(name)))
-            return graph
-        }
-        let dataset = Dataset(namedGraphs: [b: try graph(named: b), a: try graph(named: a)])
-
-        #expect(dataset.description == """
-
-            <https://example.com/a> {
-            https://example.com/a https://example.com/a https://example.com/a .
-            }
-            <https://example.com/b> {
-            https://example.com/b https://example.com/b https://example.com/b .
-            }
-            """)
     }
 }

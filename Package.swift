@@ -1,4 +1,4 @@
-// swift-tools-version: 6.3
+// swift-tools-version: 6.4
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 import PackageDescription
 import CompilerPluginSupport
@@ -6,9 +6,9 @@ import CompilerPluginSupport
 let package = Package(
     name: "SemanticKit",
     platforms: [
-        .macOS(.v26),
-        .iOS(.v26),
-        .visionOS(.v26)
+        .macOS(.v27),
+        .iOS(.v27),
+        .visionOS(.v27)
     ],
     products: [
         .library(
@@ -20,14 +20,18 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "600.0.0"),
-        .package(url: "https://github.com/SemanticKit/IRIKit.git", branch: "wp/03a-iri-normalization")
+        .package(url: "https://github.com/SemanticKit/IRIKit.git", branch: "main"),
+        .package(url: "https://github.com/SemanticKit/RDFKit.git", branch: "main")
     ],
     targets: [
         .target(
             name: "SemanticKit",
             dependencies: [
                 "SemanticKitMacros",
-                .product(name: "IRIKit", package: "IRIKit")
+                .product(name: "IRIKit", package: "IRIKit"),
+                .product(name: "RDFCore", package: "RDFKit"),
+                .product(name: "RDFFormats", package: "RDFKit"),
+                .product(name: "RDFKit", package: "RDFKit")
             ],
         ),
         .macro(
