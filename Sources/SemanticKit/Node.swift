@@ -1,5 +1,6 @@
 // Sources/SemanticKitRDF/Node.swift
 import Foundation
+import IRIKit
 
 // MARK: - RDFNode -----------------------------------------------------------
 
@@ -43,7 +44,7 @@ public protocol RDFLiteral: RDFNode {
     var lexicalForm: String { get }
     var languageTag: String? { get }      // e.g. "en", "fr‑CA"
     var textDirection: TextDirection? { get }
-    var datatype: (any Iri)? { get }            // defaults to xsd:string when nil
+    var datatype: IRI? { get }            // defaults to xsd:string when nil
 }
 
 extension RDFLiteral {
@@ -56,7 +57,7 @@ extension RDFLiteral {
             }
         }
         if let dt = datatype {
-            lit += "^^<\(try! dt.asURL().absoluteString)>"
+            lit += "^^<\(dt.rawValue)>"
         }
         return lit
     }
@@ -65,13 +66,13 @@ extension RDFLiteral {
         lhs.lexicalForm == rhs.lexicalForm &&
         lhs.languageTag == rhs.languageTag &&
         lhs.textDirection == rhs.textDirection &&
-        lhs.datatype?.string == rhs.datatype?.string
+        lhs.datatype == rhs.datatype
     }
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(lexicalForm)
         hasher.combine(languageTag)
         hasher.combine(textDirection)
-        hasher.combine(datatype?.string)
+        hasher.combine(datatype)
     }
 }

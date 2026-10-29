@@ -57,7 +57,10 @@ This checklist tracks test coverage against the RFC/spec PDFs in `Sources/Semant
 - [~] OWL to RDF mapping not present in library
 
 ## RFC 3987 (IRIs)
-- [x] Scheme validation (invalid scheme rejected)
-- [x] Unicode authority/path are percent-encoded in .string
-- [x] Missing scheme rejected
-- [x] asURL() yields valid URL for Unicode input
+SemanticKit's identifier type is IRIKit's `IRI`; RFC 3987 conformance is
+tested in IRIKit. SemanticKit tests only how it uses that type.
+- [x] Terms carry IRIKit's `IRI` as subject, predicate and object
+- [x] Missing or invalid scheme rejected (by `IRI(validating:)`)
+- [x] Literal datatypes keep Unicode characters in N-Triples output
+- [x] Literal datatypes compare by exact IRI text
+- [x] `@IRI` projects an `IRIKit.IRI` and rejects a non-IRI literal at compile time

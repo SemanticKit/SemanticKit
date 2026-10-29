@@ -1,5 +1,6 @@
 // Sources/SemanticKitRDF/Graph.swift
 import Foundation
+import IRIKit
 
 // MARK: - RDFGraph ----------------------------------------------------------
 
@@ -137,14 +138,14 @@ public struct Graph: RDFGraph, Hashable, Sendable {
 /// They **do not** expose themselves publicly – they are internal building blocks.
 
 /// A node that may appear as a subject (IRI or BlankNode).
-extension ConcreteIri: RDFSubject {}
+extension IRI: RDFSubject {}
 extension BlankNode: RDFSubject {}
 
 /// A node that may appear as a predicate (always IRI).
-extension ConcreteIri: RDFPredicate {}
+extension IRI: RDFPredicate {}
 
 /// A node that may appear as an object (IRI, BlankNode, or Literal).
-extension ConcreteIri: RDFObject {}
+extension IRI: RDFObject {}
 extension BlankNode: RDFObject {}
 extension Literal: RDFObject {}
 

@@ -1,12 +1,12 @@
 // Sources/SemanticKitRDF/RDF.swift
 import Foundation
+import IRIKit
 
 public enum RDFTermError: Error, LocalizedError {
     case emptyBlankNodeIdentifier
     case emptyLanguageTag
     case languageTagWithDatatype
     case textDirectionRequiresLanguageTag
-    case datatypeIriNotAbsolute
     case invalidGraphName
     case invalidSubject
     case invalidContainerMembershipIndex
@@ -21,8 +21,6 @@ public enum RDFTermError: Error, LocalizedError {
             return "Language-tagged strings must not declare a datatype."
         case .textDirectionRequiresLanguageTag:
             return "Text direction requires a language tag."
-        case .datatypeIriNotAbsolute:
-            return "Datatype IRI must be absolute."
         case .invalidGraphName:
             return "Graph name must be IRI or BlankNode."
         case .invalidSubject:
@@ -32,18 +30,6 @@ public enum RDFTermError: Error, LocalizedError {
         }
     }
 }
-
-// MARK: - IRI term ----------------------------------------------------------
-
-//public struct IRI: RDFIRI {
-//    public let iri: IRI
-//    public init(_ iri: IRI) {
-//        self.iri = iri
-//    }
-//    // Conformance to RDFIRI (and thus RDFNode) is supplied by the extension in Node.swift
-//}
-
-public typealias IRI = ConcreteIri
 
 // MARK: - Blank node --------------------------------------------------------
 
@@ -64,7 +50,7 @@ public struct Literal: RDFLiteral {
     public let lexicalForm: String
     public let languageTag: String?
     public let textDirection: TextDirection?
-    public let datatype: (any Iri)?
+    public let datatype: IRI?
 
     /// Designated initializer.
     ///
@@ -77,7 +63,7 @@ public struct Literal: RDFLiteral {
         _ lexicalForm: String,
         languageTag: String? = nil,
         textDirection: TextDirection? = nil,
-        datatype: (any Iri)? = nil
+        datatype: IRI? = nil
     ) throws {
         self.lexicalForm = lexicalForm
         self.languageTag = languageTag?.lowercased()
@@ -94,11 +80,6 @@ public struct Literal: RDFLiteral {
         } else {
             guard textDirection == nil else {
                 throw RDFTermError.textDirectionRequiresLanguageTag
-            }
-        }
-        if let dt = datatype {
-            guard !dt.scheme.isEmpty else {
-                throw RDFTermError.datatypeIriNotAbsolute
             }
         }
     }

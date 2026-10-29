@@ -1,3 +1,4 @@
+import IRIKit
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
@@ -17,26 +18,27 @@ public struct IRIMacro: MemberMacro {
     public static func expansion(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
+        conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
         guard let arguments = node.arguments?.as(LabeledExprListSyntax.self),
               let first = arguments.first,
-              let literal = first.expression.as(StringLiteralExprSyntax.self)
+              let literal = first.expression.as(StringLiteralExprSyntax.self),
+              let value = literal.representedLiteralValue
         else {
-            throw IRIMacroError.message("@IRI requires a string literal.")
+            throw IRIMacroError.message("@IRI requires a string literal without interpolation.")
         }
-
-        let value = literal.segments.compactMap { segment -> String? in
-            if let stringSegment = segment.as(StringSegmentSyntax.self) {
-                return stringSegment.content.text
-            }
-            return nil
-        }.joined()
 
         if declaration.is(ProtocolDeclSyntax.self) {
-            return [DeclSyntax("static var iri: String { get }")]
+            return [DeclSyntax("static var iri: IRIKit.IRI { get }")]
         }
 
-        return [DeclSyntax("public static let iri: String = \"\(raw: value)\"")]
+        do {
+            _ = try IRIKit.IRI(validating: value)
+        } catch {
+            throw IRIMacroError.message("@IRI requires an absolute IRI; \"\(value)\" is not one.")
+        }
+
+        return [DeclSyntax("public static let iri: IRIKit.IRI = \(literal)")]
     }
 }

@@ -1,5 +1,6 @@
 // Sources/SemanticKitRDF/Dataset.swift
 import Foundation
+import IRIKit
 
 // MARK: - RDFDataset ---------------------------------------------------------
 
@@ -67,7 +68,7 @@ extension RDFDataset {
     public var description: String {
         var lines: [String] = []
         lines.append(defaultGraph.description)
-        for (_, g) in namedGraphs.sorted(by: { $0.key.string < $1.key.string }) {
+        for (_, g) in namedGraphs.sorted(by: { $0.key < $1.key }) {
             lines.append(g.description)
         }
         return lines.joined(separator: "\n")
