@@ -1,3 +1,4 @@
+import Foundation
 import IRIKit
 import Testing
 @testable import SemanticKit
@@ -36,6 +37,15 @@ struct IRIBoundaryTests {
         let literal = try Literal("1", datatype: datatype)
 
         #expect(literal.description == "\"1\"^^<https://exämple.com/\u{8DEF}\u{5F84}>")
+    }
+
+    @Test("A boundary that needs a URL maps the IRI to URI form with URL(_:).")
+    func urlMappingHappensAtTheBoundary() throws {
+        // ConcreteIri.asURL() did this inside the term; IRIKit does it only
+        // when a caller asks for a Foundation URL.
+        let iri = try IRI(validating: "https://example.com/\u{8DEF}\u{5F84}")
+
+        #expect(URL(iri).absoluteString == "https://example.com/%E8%B7%AF%E5%BE%84")
     }
 
     @Test("Literals compare datatypes by exact IRI text, as RDF term equality requires.")
