@@ -19,16 +19,21 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "600.0.0")
+        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "600.0.0"),
+        .package(url: "https://github.com/SemanticKit/IRIKit.git", branch: "wp/03a-iri-normalization")
     ],
     targets: [
         .target(
             name: "SemanticKit",
-            dependencies: ["SemanticKitMacros"],
+            dependencies: [
+                "SemanticKitMacros",
+                .product(name: "IRIKit", package: "IRIKit")
+            ],
         ),
         .macro(
             name: "SemanticKitMacros",
             dependencies: [
+                .product(name: "IRIKit", package: "IRIKit"),
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
@@ -37,7 +42,12 @@ let package = Package(
         ),
         .testTarget(
             name: "SemanticKitTests",
-            dependencies: ["SemanticKit"],
+            dependencies: [
+                "SemanticKit",
+                "SemanticKitMacros",
+                .product(name: "SwiftSyntaxMacroExpansion", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacrosGenericTestSupport", package: "swift-syntax")
+            ],
         ),
     ]
 )

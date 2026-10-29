@@ -1,5 +1,6 @@
 // Sources/SemanticKitRDF/Triple.swift
 import Foundation
+import IRIKit
 
 // MARK: - RDFTriple ---------------------------------------------------------
 
