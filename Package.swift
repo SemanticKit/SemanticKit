@@ -52,6 +52,7 @@ let package = Package(
                 .product(name: "SwiftSyntaxMacroExpansion", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxMacrosGenericTestSupport", package: "swift-syntax")
             ],
+            exclude: ["RFC-Test-Checklist.md"]
         ),
     ]
 )
