@@ -20,7 +20,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "600.0.0"),
-        .package(url: "https://github.com/SemanticKit/IRIKit.git", branch: "wp/03a-iri-normalization")
+        .package(url: "https://github.com/SemanticKit/IRIKit.git", branch: "main")
     ],
     targets: [
         .target(
