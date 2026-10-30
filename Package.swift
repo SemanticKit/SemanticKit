@@ -33,8 +33,18 @@ let package = Package(
         .macro(
             name: "SemanticKitMacros",
             dependencies: [
-                .product(name: "IRIKit", package: "IRIKit"),
+                "SemanticKitMacroImplementations",
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacros", package: "swift-syntax")
+            ]
+        ),
+        // The macro expansions live in a plain library so the test target can
+        // expand them without depending on the macro target itself.
+        .target(
+            name: "SemanticKitMacroImplementations",
+            dependencies: [
+                .product(name: "IRIKit", package: "IRIKit"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax")
@@ -44,7 +54,7 @@ let package = Package(
             name: "SemanticKitTests",
             dependencies: [
                 "SemanticKit",
-                "SemanticKitMacros",
+                "SemanticKitMacroImplementations",
                 .product(name: "SwiftSyntaxMacroExpansion", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxMacrosGenericTestSupport", package: "swift-syntax")
             ],

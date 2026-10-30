@@ -1,5 +1,5 @@
 import IRIKit
-import SemanticKitMacros
+import SemanticKitMacroImplementations
 import SwiftSyntaxMacroExpansion
 import SwiftSyntaxMacrosGenericTestSupport
 import Testing
