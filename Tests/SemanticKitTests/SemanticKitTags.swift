@@ -6,7 +6,4 @@ extension Tag {
 
     /// Tests of IRIKit's `IRI` used as SemanticKit's identifier type.
     @Tag static var iri: Self
-
-    /// Tests of the `@IRI` macro.
-    @Tag static var macro: Self
 }

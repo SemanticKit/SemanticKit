@@ -63,4 +63,3 @@ tested in IRIKit. SemanticKit tests only how it uses that type.
 - [x] Missing or invalid scheme rejected (by `IRI(validating:)`)
 - [x] Literal datatypes keep Unicode characters in N-Triples output
 - [x] Literal datatypes compare by exact IRI text
-- [x] `@IRI` projects an `IRIKit.IRI` and rejects a non-IRI literal at compile time
