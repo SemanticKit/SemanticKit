@@ -1,0 +1,2 @@
+<https://example.com/s> <https://example.com/p> "שלום"@he--rtl .
+<https://example.com/s> <https://example.com/p> <<( <https://example.com/s> <https://example.com/p> <https://example.com/o> )>> .

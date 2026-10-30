@@ -36,7 +36,7 @@ let package = Package(
             dependencies: [
                 "SemanticKit"
             ],
-            exclude: ["RFC-Test-Checklist.md"]
+            exclude: ["Fixtures"]
         ),
     ]
 )
