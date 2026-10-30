@@ -1,0 +1,3 @@
+PREFIX : <https://example.com/>
+
+:s :p "שלום"@he--rtl, <<( :s :p :o )>> .

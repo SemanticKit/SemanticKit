@@ -1,0 +1,4 @@
+PREFIX : <https://example.com/>
+
+:s :p "1"^^<https://exämple.com/路径> .
+:s :q <https://example.com/路径> .
